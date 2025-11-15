@@ -14,6 +14,8 @@
     <properties>
         <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.shade.plugin.version>3.5.3</maven.shade.plugin.version>
+        <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
     </properties>
 
     <build>
@@ -22,7 +24,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
+                <version>${maven.compiler.plugin.version}</version>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
@@ -31,13 +33,44 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.5.3</version>
+                <version>${maven.shade.plugin.version}</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
                         <goals>
                             <goal>shade</goal>
                         </goals>
+                        <configuration>
+                            <!-- Do not generate a dependency-reduced POM; keeps original scopes intact -->
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <!-- Keep the jar lean; excludes unused classes from shaded deps (if any) -->
+                            <minimizeJar>true</minimizeJar>
+                            <!-- Filters to avoid copying signatures that can cause warnings -->
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <!-- Ready for future includes/relocations; currently we don't shade server APIs -->
+                            <!--
+                            <relocations>
+                                <relocation>
+                                    <pattern>some.external.lib</pattern>
+                                    <shadedPattern>ir.mrwopi.flamelobby.shaded.some.external.lib</shadedPattern>
+                                </relocation>
+                            </relocations>
+                            <artifactSet>
+                                <includes>
+                                    <include>groupId:artifactId</include>
+                                </includes>
+                            </artifactSet>
+                            -->
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -72,6 +105,13 @@
             <groupId>com.github.koca2000</groupId>
             <artifactId>NoteBlockAPI</artifactId>
             <version>1.6.2</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- JetBrains annotations are used in code; mark as provided (not required at runtime on Paper) -->
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>24.1.0</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

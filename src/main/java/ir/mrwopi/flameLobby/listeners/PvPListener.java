@@ -28,10 +28,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PvPListener implements Listener {
     private static final String SPAWN_WORLD = "spawn";
     private static final int SWORD_SLOT = 4; // hotbar slot index
+    private static final int COMBAT_SECONDS = 10;
 
     private final FlameLobby plugin;
     private final PvPManager pvpManager;
     private final Map<UUID, BukkitTask> countdowns = new ConcurrentHashMap<>();
+    private final Map<UUID, BukkitTask> combatBars = new ConcurrentHashMap<>();
 
     public PvPListener(FlameLobby plugin, PvPManager pvpManager) {
         this.plugin = plugin;
@@ -59,7 +61,13 @@ public class PvPListener implements Listener {
 
         // Cancel previous countdown
         cancelCountdown(player.getUniqueId());
-        pvpManager.setEnabled(player, false);
+        // Do not immediately disable if player is still combat-tagged
+        if (!pvpManager.isInCombat(player)) {
+            pvpManager.setEnabled(player, false);
+        } else {
+            int left = pvpManager.getCombatSecondsLeft(player);
+            player.sendActionBar(Component.text("PvP active (combat): " + left + "s", NamedTextColor.RED));
+        }
 
         if (newSlot == SWORD_SLOT && isPvPSword(inHand)) {
             // Start 5-second countdown while holding
@@ -74,9 +82,14 @@ public class PvPListener implements Listener {
                         return;
                     }
                     if (!pvpManager.isStillHolding(player, SWORD_SLOT) || !isPvPSword(player.getInventory().getItem(SWORD_SLOT))) {
-                        player.sendMessage(Component.text("PvP disabled (you switched items)", NamedTextColor.GRAY));
                         cancelCountdown(player.getUniqueId());
-                        pvpManager.setEnabled(player, false);
+                        if (!pvpManager.isInCombat(player)) {
+                            pvpManager.setEnabled(player, false);
+                            player.sendMessage(Component.text("PvP disabled (you switched items)", NamedTextColor.GRAY));
+                        } else {
+                            int left = pvpManager.getCombatSecondsLeft(player);
+                            player.sendActionBar(Component.text("PvP active (combat): " + left + "s", NamedTextColor.RED));
+                        }
                         return;
                     }
                     if (sec <= 0) {
@@ -100,7 +113,7 @@ public class PvPListener implements Listener {
 
         if (!isInSpawn(victim) || !isInSpawn(attacker)) return;
 
-        boolean allow = pvpManager.isEnabled(attacker) && pvpManager.isEnabled(victim);
+        boolean allow = pvpManager.isPvpActive(attacker) && pvpManager.isPvpActive(victim);
         if (!allow) {
             // Block PvP if either side not enabled
             event.setCancelled(true);
@@ -112,6 +125,14 @@ public class PvPListener implements Listener {
         BlockData redstoneBlock = Material.REDSTONE_BLOCK.createBlockData();
         w.spawnParticle(Particle.BLOCK_CRACK, victim.getLocation().add(0, 1, 0), 15, 0.3, 0.3, 0.3, 0.02, redstoneBlock);
         w.playSound(victim.getLocation(), Sound.BLOCK_STONE_BREAK, 1.0f, 1.0f);
+
+        // Tag both players for combat to keep PvP active for a while even if they switch items
+        pvpManager.tagCombat(attacker, COMBAT_SECONDS);
+        pvpManager.tagCombat(victim, COMBAT_SECONDS);
+
+        // Start or refresh combat countdown bars and auto-disable when finished (if not holding sword)
+        startOrRefreshCombatBar(attacker);
+        startOrRefreshCombatBar(victim);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -122,19 +143,56 @@ public class PvPListener implements Listener {
         event.setKeepLevel(true);
         event.getDrops().clear();
         event.setDroppedExp(0);
-        // Optional: disable PvP after death
-        pvpManager.setEnabled(player, false);
+        // Disable PvP and clear combat on death; stop any bars
+        pvpManager.clear(player);
+        stopCombatBar(player.getUniqueId());
     }
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         UUID id = event.getPlayer().getUniqueId();
         cancelCountdown(id);
+        stopCombatBar(id);
         pvpManager.clear(event.getPlayer());
     }
 
     private void cancelCountdown(UUID id) {
         BukkitTask t = countdowns.remove(id);
+        if (t != null) t.cancel();
+    }
+
+    private void startOrRefreshCombatBar(Player player) {
+        // Cancel previous bar if exists
+        BukkitTask prev = combatBars.remove(player.getUniqueId());
+        if (prev != null) prev.cancel();
+
+        BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            if (!player.isOnline() || !isInSpawn(player)) {
+                stopCombatBar(player.getUniqueId());
+                return;
+            }
+            int left = pvpManager.getCombatSecondsLeft(player);
+            if (left <= 0) {
+                stopCombatBar(player.getUniqueId());
+                // Auto-disable PvP if not holding the PvP sword at the configured slot
+                ItemStack item = player.getInventory().getItem(SWORD_SLOT);
+                boolean holdingPvpSword = isPvPSword(item) && player.getInventory().getHeldItemSlot() == SWORD_SLOT;
+                if (!holdingPvpSword) {
+                    if (pvpManager.isEnabled(player)) {
+                        pvpManager.setEnabled(player, false);
+                        player.sendMessage(Component.text("PvP disabled (combat ended)", NamedTextColor.GRAY));
+                    }
+                }
+                return;
+            }
+            player.sendActionBar(Component.text("PvP active (combat): " + left + "s", NamedTextColor.RED));
+        }, 0L, 20L);
+
+        combatBars.put(player.getUniqueId(), task);
+    }
+
+    private void stopCombatBar(UUID id) {
+        BukkitTask t = combatBars.remove(id);
         if (t != null) t.cancel();
     }
 }

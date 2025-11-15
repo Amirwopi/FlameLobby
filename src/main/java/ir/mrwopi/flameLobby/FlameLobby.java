@@ -26,6 +26,9 @@ public final class FlameLobby extends JavaPlugin {
         try {
             // Ensure default configuration exists
             saveDefaultConfig();
+            // Register BungeeCord-compatible outgoing channels for server switching (Velocity compatible)
+            getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
+            getServer().getMessenger().registerOutgoingPluginChannel(this, "bungeecord:main");
             initializeMusicSystem();
             // Initialize Server Selector GUI
             serverSelectorGUI = new ServerSelectorGUI(this);
@@ -123,6 +126,9 @@ public final class FlameLobby extends JavaPlugin {
     @Override
     public void onDisable() {
         try {
+            // Unregister messaging channels
+            getServer().getMessenger().unregisterOutgoingPluginChannel(this, "BungeeCord");
+            getServer().getMessenger().unregisterOutgoingPluginChannel(this, "bungeecord:main");
             if (musicDataManager != null) {
                 musicDataManager.cleanup();
             }

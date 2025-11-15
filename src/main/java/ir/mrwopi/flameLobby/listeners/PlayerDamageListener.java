@@ -28,6 +28,14 @@ public class PlayerDamageListener implements Listener {
 
         // Protect players in spawn from environmental damage
         if (isInSpawn(player)) {
+            // Let PvPListener handle PvP-related damage
+            EntityDamageEvent.DamageCause cause = event.getCause();
+            if (cause == EntityDamageEvent.DamageCause.ENTITY_ATTACK ||
+                cause == EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK ||
+                cause == EntityDamageEvent.DamageCause.PROJECTILE) {
+                return;
+            }
+            // Cancel only environmental/other damage
             event.setCancelled(true);
 
             if (isFireDamage(event.getCause())) {

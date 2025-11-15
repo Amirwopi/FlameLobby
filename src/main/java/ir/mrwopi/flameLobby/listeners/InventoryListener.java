@@ -22,15 +22,15 @@ public class InventoryListener implements Listener {
             return;
         }
 
-        if (isInSpawn(player) || player.hasPermission(ADMIN_PERMISSION)) {
+        // Allow clicks in our plugin GUIs
+        if (isMusicGUI(event.getView().title()) || isServerSelectorGUI(event.getView().title())) {
             return;
         }
 
-        if (isMusicGUI(event.getView().title())) {
-            return;
+        // Cancel only inside spawn for non-admins
+        if (isInSpawn(player) && !player.hasPermission(ADMIN_PERMISSION)) {
+            event.setCancelled(true);
         }
-
-        event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -39,37 +39,31 @@ public class InventoryListener implements Listener {
             return;
         }
 
-        if (isInSpawn(player) || player.hasPermission(ADMIN_PERMISSION)) {
-            return;
+        if (isInSpawn(player) && !player.hasPermission(ADMIN_PERMISSION)) {
+            event.setCancelled(true);
         }
-
-        event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onItemDrop(PlayerDropItemEvent event) {
         var player = event.getPlayer();
 
-        if (isInSpawn(player) || player.hasPermission(ADMIN_PERMISSION)) {
-            return;
+        if (isInSpawn(player) && !player.hasPermission(ADMIN_PERMISSION)) {
+            event.setCancelled(true);
         }
-
-        event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onSwapHandItems(PlayerSwapHandItemsEvent event) {
         var player = event.getPlayer();
 
-        if (isInSpawn(player) || player.hasPermission(ADMIN_PERMISSION)) {
-            return;
+        if (isInSpawn(player) && !player.hasPermission(ADMIN_PERMISSION)) {
+            event.setCancelled(true);
         }
-
-        event.setCancelled(true);
     }
 
     private boolean isInSpawn(Player player) {
-        return !SPAWN_WORLD.equals(player.getWorld().getName());
+        return SPAWN_WORLD.equals(player.getWorld().getName());
     }
 
     private boolean isMusicGUI(Component title) {
@@ -79,5 +73,13 @@ public class InventoryListener implements Listener {
 
         var plainTitle = PlainTextComponentSerializer.plainText().serialize(title);
         return plainTitle.contains("Music Player");
+    }
+
+    private boolean isServerSelectorGUI(Component title) {
+        if (title == null) {
+            return false;
+        }
+        var plainTitle = PlainTextComponentSerializer.plainText().serialize(title);
+        return plainTitle.contains("Game Selector");
     }
 }

@@ -4,6 +4,10 @@ import com.destroystokyo.paper.profile.ProfileProperty;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
+import com.google.common.io.ByteArrayDataOutput;
+import com.google.common.io.ByteStreams;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Material;
@@ -146,30 +150,30 @@ public class ServerSelectorGUI implements Listener {
         switch (slot) {
             case 10 -> { // SkyBlock
                 sound(player, Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 1.2f);
-                runJoinCommand(player, "skyblock");
+                connectToServer(player, "skyblock");
             }
             case 11 -> { // Survival
                 sound(player, Sound.BLOCK_STONE_BREAK, 1f, 1f);
-                runJoinCommand(player, "survival");
+                connectToServer(player, "survival");
             }
             case 38 -> { // Telegram
                 sound(player, Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1.5f);
-                player.sendMessage(Component.text("Telegram » ", NamedTextColor.BLUE).append(Component.text("https://t.me/flamenetwork", NamedTextColor.GRAY)));
+                player.sendMessage(clickableLink("Telegram » ", "https://t.me/flamenetwork", NamedTextColor.BLUE));
                 player.closeInventory();
             }
             case 41 -> { // TeamSpeak
                 sound(player, Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1.5f);
-                player.sendMessage(Component.text("TeamSpeak » ", NamedTextColor.AQUA).append(Component.text("ts.flamenetwork.ir", NamedTextColor.GRAY)));
+                player.sendMessage(clickableLink("TeamSpeak » ", "https://ts.flamenetwork.ir", NamedTextColor.AQUA));
                 player.closeInventory();
             }
             case 40 -> { // Discord
                 sound(player, Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1.5f);
-                player.sendMessage(Component.text("Discord » ", NamedTextColor.BLUE).append(Component.text("https://discord.gg/fRk56VzCRM", NamedTextColor.GRAY)));
+                player.sendMessage(clickableLink("Discord » ", "https://discord.gg/fRk56VzCRM", NamedTextColor.BLUE));
                 player.closeInventory();
             }
             case 39 -> { // Website
                 sound(player, Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1.5f);
-                player.sendMessage(Component.text("Website » ", NamedTextColor.YELLOW).append(Component.text("https://www.flamenetwork.ir", NamedTextColor.GRAY)));
+                player.sendMessage(clickableLink("Website » ", "https://www.flamenetwork.ir", NamedTextColor.YELLOW));
                 player.closeInventory();
             }
             default -> {
@@ -186,9 +190,21 @@ public class ServerSelectorGUI implements Listener {
         }
     }
 
-    private void runJoinCommand(Player player, String commandWithoutSlash) {
+    private void connectToServer(Player player, String serverName) {
         player.closeInventory();
-        Bukkit.getScheduler().runTask(plugin, () -> player.performCommand(commandWithoutSlash));
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            try {
+                ByteArrayDataOutput out = ByteStreams.newDataOutput();
+                out.writeUTF("Connect");
+                out.writeUTF(serverName);
+                byte[] payload = out.toByteArray();
+                // Send on both legacy and modern channels for Velocity compatibility
+                player.sendPluginMessage(plugin, "BungeeCord", payload);
+                player.sendPluginMessage(plugin, "bungeecord:main", payload);
+            } catch (Exception e) {
+                player.sendMessage(Component.text("Failed to connect to server: " + serverName, NamedTextColor.RED));
+            }
+        });
     }
 
     private void sound(Player player, Sound sound, float vol, float pitch) {
@@ -217,5 +233,12 @@ public class ServerSelectorGUI implements Listener {
         public @NotNull Inventory getInventory() {
             return Bukkit.createInventory(this, 9, Component.text("Temp"));
         }
+    }
+
+    private Component clickableLink(String label, String url, NamedTextColor labelColor) {
+        Component link = Component.text(url, NamedTextColor.GRAY)
+                .clickEvent(ClickEvent.openUrl(url))
+                .hoverEvent(HoverEvent.showText(Component.text("Click to open", NamedTextColor.GREEN)));
+        return Component.text(label + " ", labelColor).append(link);
     }
 }

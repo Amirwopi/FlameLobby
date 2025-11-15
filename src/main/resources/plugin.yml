@@ -1,0 +1,36 @@
+name: FlameLobby
+version: "${project.version}"
+main: ir.mrwopi.flameLobby.FlameLobby
+api-version: '1.20'
+author: Amirwopi
+website: https://github.com/amirwopi
+description: Advanced Lobby Plugin with Music and Server Selection
+softdepend: [NoteBlockAPI]
+
+commands:
+  fly:
+    description: Toggle flight for yourself or another player
+    usage: /fly [player]
+    permission: flamelobby.fly
+  tphere:
+    description: Teleport a player to you
+    usage: /tphere <player>
+    permission: flamelobby.tphere
+  tpall:
+    description: Teleport all players to you
+    usage: /tpall
+    permission: flamelobby.tpall
+
+permissions:
+  flamelobby.fly:
+    description: Allow using /fly on yourself
+    default: op
+  flamelobby.fly.others:
+    description: Allow using /fly on others
+    default: op
+  flamelobby.tphere:
+    description: Allow using /tphere
+    default: op
+  flamelobby.tpall:
+    description: Allow using /tpall
+    default: op

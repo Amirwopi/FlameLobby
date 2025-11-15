@@ -1,0 +1,6 @@
+# Default configuration for FlameLobby
+# The world name considered as protected spawn area
+spawn-world: "spawn"
+
+messages:
+  prefix: "§e[FlameLobby]§r "

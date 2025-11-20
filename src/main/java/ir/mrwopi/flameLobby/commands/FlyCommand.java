@@ -32,7 +32,7 @@ public class FlyCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        // /fly <player>
+
         if (!sender.hasPermission("flamelobby.fly.others")) {
             sender.sendMessage("§cYou don't have permission.");
             return true;

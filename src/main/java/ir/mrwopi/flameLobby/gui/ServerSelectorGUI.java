@@ -1,15 +1,14 @@
 package ir.mrwopi.flameLobby.gui;
 
 import com.destroystokyo.paper.profile.ProfileProperty;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.event.ClickEvent;
-import net.kyori.adventure.text.event.HoverEvent;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
-import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -44,11 +43,10 @@ public class ServerSelectorGUI implements Listener {
 
     public void open(Player player) {
         var holder = new SelectorHolder();
-        var title = Component.text("\uF80A ", NamedTextColor.DARK_RED) // custom char to make it feel fancy in some fonts
-                .append(Component.text(TITLE_RAW, NamedTextColor.RED).decorate(TextDecoration.BOLD));
+        var title = Component.text(TITLE_RAW, NamedTextColor.RED).decorate(TextDecoration.BOLD);
         Inventory inv = Bukkit.createInventory(holder, SIZE, title);
 
-        // Background - Gray panes
+
         var bg = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         var bgMeta = bg.getItemMeta();
         if (bgMeta != null) {
@@ -58,21 +56,20 @@ public class ServerSelectorGUI implements Listener {
         int[] bgSlots = new int[]{0,1,2,3,4,5,6,7,8,9,17,18,26,27,28,29,30,31,32,33,34,35,36,37,43,44};
         for (int s : bgSlots) inv.setItem(s, bg);
 
-        // Accent border - Red stained glass for fiery theme
+
         var red = new ItemStack(Material.RED_STAINED_GLASS_PANE);
         var redMeta = red.getItemMeta();
         if (redMeta != null) {
             redMeta.displayName(Component.text(" "));
             red.setItemMeta(redMeta);
         }
-        // corners/accent
+
         int[] accents = new int[]{
                 9, 17, 27, 35
         };
         for (int s : accents) inv.setItem(s, red);
 
-        // Items
-        // SkyBlock (slot 10)
+
         inv.setItem(10, skull(
                 "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjI1MDJhMzhlMTg5Nzg4MGM4Y2U1OWNjNjEzZDIyYWRhOGYwYjg0NzU0ODM5MmY1OTMxYzdhYWJhODZjYTA4MyJ9fX0=",
                 Component.text("☁ ", NamedTextColor.AQUA).append(Component.text("SkyBlock", NamedTextColor.AQUA).decorate(TextDecoration.BOLD)),
@@ -84,7 +81,7 @@ public class ServerSelectorGUI implements Listener {
                 ),
                 Material.PLAYER_HEAD));
 
-        // Survival (slot 11)
+
         inv.setItem(11, skull(
                 "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNjEyNTNjY2NmNzMyNmFmYjUyMjNhMWFkNjI1MzJhZDU2YzQyMWQ4OTM2NzMwOTE1YzQxNDU5NzhjOWU3ZWY3MiJ9fX0=",
                 Component.text("⛏ ", NamedTextColor.GOLD).append(Component.text("Survival", NamedTextColor.GOLD).decorate(TextDecoration.BOLD)),
@@ -96,7 +93,7 @@ public class ServerSelectorGUI implements Listener {
                 ),
                 Material.PLAYER_HEAD));
 
-        // Socials & Links
+
         inv.setItem(38, skull(
                 "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZDNkMjVkNTVjYWVkZmQ3MGVlN2YzYTgwNmFmMDAyNWYxNTNkNGJmMzRmNDFlNmVmZDQ0ZWM4ZmU3NDE5OGYzNSJ9fX0=",
                 Component.text("✈ Telegram", NamedTextColor.BLUE).decorate(TextDecoration.BOLD),
@@ -121,8 +118,8 @@ public class ServerSelectorGUI implements Listener {
                 List.of(Component.text("https://www.flamenetwork.ir", NamedTextColor.YELLOW)),
                 Material.PLAYER_HEAD));
 
-        // Soon placeholders (multiple slots)
-        int[] soonSlots = new int[]{12,13,14,15,16,18,19,20,21,22,23,24,25};
+
+        int[] soonSlots = new int[]{12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25};
         for (int s : soonSlots) {
             inv.setItem(s, skull(
                     "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZjM0MGQ1MGQ3ZDEyOTNiYTE2ZDIzYzZkMDdhYjA2NmNkYzE1NzVjNjhiY2E2OWU5NmYwYmI2ZDFjZTFiZjFiYSJ9fX0=",
@@ -131,9 +128,9 @@ public class ServerSelectorGUI implements Listener {
                     Material.PLAYER_HEAD));
         }
 
-        // Open inventory
+
         player.openInventory(inv);
-        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1.2f);
+        playGuiOpenFx(player);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -148,36 +145,36 @@ public class ServerSelectorGUI implements Listener {
 
         int slot = event.getSlot();
         switch (slot) {
-            case 10 -> { // SkyBlock
+            case 10 -> {
                 sound(player, Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 1.2f);
                 connectToServer(player, "skyblock");
             }
-            case 11 -> { // Survival
+            case 11 -> {
                 sound(player, Sound.BLOCK_STONE_BREAK, 1f, 1f);
                 connectToServer(player, "survival");
             }
-            case 38 -> { // Telegram
+            case 38 -> {
                 sound(player, Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1.5f);
                 player.sendMessage(clickableLink("Telegram » ", "https://t.me/flamenetwork", NamedTextColor.BLUE));
                 player.closeInventory();
             }
-            case 41 -> { // TeamSpeak
+            case 41 -> {
                 sound(player, Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1.5f);
                 player.sendMessage(clickableLink("TeamSpeak » ", "https://ts.flamenetwork.ir", NamedTextColor.AQUA));
                 player.closeInventory();
             }
-            case 40 -> { // Discord
+            case 40 -> {
                 sound(player, Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1.5f);
                 player.sendMessage(clickableLink("Discord » ", "https://discord.gg/fRk56VzCRM", NamedTextColor.BLUE));
                 player.closeInventory();
             }
-            case 39 -> { // Website
+            case 39 -> {
                 sound(player, Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1.5f);
                 player.sendMessage(clickableLink("Website » ", "https://www.flamenetwork.ir", NamedTextColor.YELLOW));
                 player.closeInventory();
             }
             default -> {
-                // Soon or background
+
                 sound(player, Sound.UI_BUTTON_CLICK, 0.6f, 1.0f);
             }
         }
@@ -198,7 +195,7 @@ public class ServerSelectorGUI implements Listener {
                 out.writeUTF("Connect");
                 out.writeUTF(serverName);
                 byte[] payload = out.toByteArray();
-                // Send on both legacy and modern channels for Velocity compatibility
+
                 player.sendPluginMessage(plugin, "BungeeCord", payload);
                 player.sendPluginMessage(plugin, "bungeecord:main", payload);
             } catch (Exception e) {
@@ -209,6 +206,14 @@ public class ServerSelectorGUI implements Listener {
 
     private void sound(Player player, Sound sound, float vol, float pitch) {
         player.playSound(player.getLocation(), sound, vol, pitch);
+    }
+
+    private void playGuiOpenFx(Player player) {
+
+        sound(player, Sound.UI_TOAST_IN, 0.8f, 1.0f);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> sound(player, Sound.BLOCK_NOTE_BLOCK_PLING, 0.8f, 1.2f), 2L);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> sound(player, Sound.BLOCK_NOTE_BLOCK_PLING, 0.8f, 1.5f), 6L);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> sound(player, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 0.6f, 1.8f), 10L);
     }
 
     private ItemStack skull(String texture, Component name, List<Component> lore, Material fallback) {

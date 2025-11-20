@@ -34,7 +34,6 @@ public class PvPManager {
         combatUntil.remove(player.getUniqueId());
     }
 
-    // Combat tagging: keep PvP active for N seconds after a valid hit
     public void tagCombat(Player player, int seconds) {
         long until = System.currentTimeMillis() + (seconds * 1000L);
         combatUntil.put(player.getUniqueId(), until);

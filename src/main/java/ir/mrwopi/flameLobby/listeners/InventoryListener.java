@@ -22,12 +22,12 @@ public class InventoryListener implements Listener {
             return;
         }
 
-        // Allow clicks in our plugin GUIs
+
         if (isMusicGUI(event.getView().title()) || isServerSelectorGUI(event.getView().title())) {
             return;
         }
 
-        // Cancel only inside spawn for non-admins
+
         if (isInSpawn(player) && !player.hasPermission(ADMIN_PERMISSION)) {
             event.setCancelled(true);
         }

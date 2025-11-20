@@ -8,9 +8,11 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityCombustEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
-import static org.bukkit.potion.PotionEffectType.*;
 import org.bukkit.potion.PotionEffectType;
+
 import java.util.List;
+
+import static org.bukkit.potion.PotionEffectType.*;
 
 public class PlayerDamageListener implements Listener {
     private final FlameLobby plugin;
@@ -26,16 +28,16 @@ public class PlayerDamageListener implements Listener {
             return;
         }
 
-        // Protect players in spawn from environmental damage
+
         if (isInSpawn(player)) {
-            // Let PvPListener handle PvP-related damage
+
             EntityDamageEvent.DamageCause cause = event.getCause();
             if (cause == EntityDamageEvent.DamageCause.ENTITY_ATTACK ||
                 cause == EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK ||
                 cause == EntityDamageEvent.DamageCause.PROJECTILE) {
                 return;
             }
-            // Cancel only environmental/other damage
+
             event.setCancelled(true);
 
             if (isFireDamage(event.getCause())) {
@@ -58,11 +60,11 @@ public class PlayerDamageListener implements Listener {
             return;
         }
 
-        // In spawn, let PvPListener decide (handles enabled PvP, effects, etc.)
+
         if (isInSpawn(victim)) {
             return;
         }
-        // Outside spawn: do nothing special here (don't interfere)
+
     }
 
     @EventHandler(priority = EventPriority.HIGH)

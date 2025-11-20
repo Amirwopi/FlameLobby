@@ -1,12 +1,10 @@
 package ir.mrwopi.flameLobby.listeners;
 
-import java.util.*;
-
 import ir.mrwopi.flameLobby.FlameLobby;
-import org.bukkit.*;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.*;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -17,6 +15,8 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
+
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
@@ -57,6 +57,9 @@ public record PlayerJoinListener(FlameLobby plugin) implements Listener {
                     }
                 }, 20L));
             }
+
+
+            player.getInventory().setHeldItemSlot(0);
 
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 if (player.isOnline()) {
@@ -249,6 +252,13 @@ public record PlayerJoinListener(FlameLobby plugin) implements Listener {
                     Component.text("Spawn-only duels", NamedTextColor.DARK_GRAY)
                             .decoration(TextDecoration.ITALIC, false)
             ));
+            meta.setUnbreakable(true);
+            meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES);
+
+            meta.addEnchant(Enchantment.DAMAGE_ALL, 2, true);
+            if (meta instanceof org.bukkit.inventory.meta.Damageable dmg) {
+                dmg.setDamage(0);
+            }
         });
         player.getInventory().setItem(4, sword);
     }

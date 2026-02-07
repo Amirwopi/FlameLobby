@@ -6,6 +6,7 @@ import ir.mrwopi.flameLobby.managers.MusicManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -40,10 +41,12 @@ public class MusicGUIListener implements Listener {
     private static final String ARROW_RIGHT_TEXTURE = "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMzFjMGVkZWRkNzExNWZjMWIyM2Q1MWNlOTY2MzU4YjI3MTk1ZGFmMjZlYmI2ZTQ1YTY2YzM0YzY5YzM0MDkxIn19fQ==";
     private static final String CLOSE_TEXTURE = "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZGVmNWM3YjY5OGJmZjEyZmRiZTY2Mjk4ZDEwYWQyYjQzYzFlMWMwYmZmZjkwZDlmNWViNmVjNjMxMzhjNjE4In19fQ==";
 
+    private final FlameLobby plugin;
     private final MusicManager musicManager;
     private final PlainTextComponentSerializer plainSerializer;
 
     public MusicGUIListener(FlameLobby plugin) {
+        this.plugin = plugin;
         this.musicManager = plugin.getMusicManager();
         this.plainSerializer = PlainTextComponentSerializer.plainText();
     }
@@ -56,7 +59,7 @@ public class MusicGUIListener implements Listener {
         var tracks = musicManager.getAllTracks();
 
         if (tracks.isEmpty()) {
-            player.sendMessage(Component.text("No music tracks available!", NamedTextColor.RED));
+            sendConfigured(player, "messages.music.no-tracks", "§cNo music tracks available!");
             return;
         }
 
@@ -64,8 +67,15 @@ public class MusicGUIListener implements Listener {
         page = Math.max(0, Math.min(page, totalPages - 1));
 
         var holder = new MusicInventoryHolder(page);
-        var title = Component.text("Music Player ", NamedTextColor.GOLD)
-                .append(Component.text("- Page " + (page + 1) + "/" + totalPages, NamedTextColor.GRAY));
+        String titleBase = plugin.getConfig().getString("music-gui.title", "Music Player");
+        String pageFormat = plugin.getConfig().getString("music-gui.page-format", "- Page {page}/{pages}");
+        if (titleBase == null) titleBase = "Music Player";
+        if (pageFormat == null) pageFormat = "- Page {page}/{pages}";
+        String pageText = pageFormat
+                .replace("{page}", String.valueOf(page + 1))
+                .replace("{pages}", String.valueOf(totalPages));
+        var title = Component.text(titleBase + " ", NamedTextColor.GOLD)
+                .append(Component.text(pageText, NamedTextColor.GRAY));
 
         var gui = Bukkit.createInventory(holder, GUI_SIZE, title);
 
@@ -338,13 +348,13 @@ public class MusicGUIListener implements Listener {
         musicManager.permanentlyStopMusic(player);
         player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 1.0f, 0.5f);
         player.closeInventory();
-        player.sendMessage(Component.text("Music has been permanently disabled!", NamedTextColor.RED));
+        sendConfigured(player, "messages.music.permanently-disabled", "§cMusic has been permanently disabled!");
     }
 
     private void handleEnableMusic(Player player, int currentPage) {
         musicManager.enableMusic(player);
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
-        player.sendMessage(Component.text("Music has been enabled!", NamedTextColor.GREEN));
+        sendConfigured(player, "messages.music.enabled", "§aMusic has been enabled!");
 
         scheduleGUIRefresh(player, currentPage, 2L);
     }
@@ -381,6 +391,13 @@ public class MusicGUIListener implements Listener {
                 },
                 delay
         );
+    }
+
+    private void sendConfigured(Player player, String path, String fallback) {
+        String prefix = plugin.getConfig().getString("messages.prefix", "");
+        String raw = plugin.getConfig().getString(path, fallback);
+        if (raw == null) raw = fallback;
+        player.sendMessage(LegacyComponentSerializer.legacySection().deserialize(prefix + raw));
     }
 
     private record MusicInventoryHolder(int page) implements InventoryHolder {

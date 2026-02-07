@@ -3,6 +3,7 @@ package ir.mrwopi.flameLobby.gui;
 import com.destroystokyo.paper.profile.ProfileProperty;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
+import ir.mrwopi.flameLobby.FlameLobby;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
@@ -23,7 +24,6 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
-import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -33,17 +33,16 @@ import java.util.UUID;
 public class ServerSelectorGUI implements Listener {
 
     private static final int SIZE = 45;
-    private static final String TITLE_RAW = "Game Selector";
+    private final FlameLobby plugin;
 
-    private final Plugin plugin;
-
-    public ServerSelectorGUI(Plugin plugin) {
+    public ServerSelectorGUI(FlameLobby plugin) {
         this.plugin = plugin;
     }
 
     public void open(Player player) {
         var holder = new SelectorHolder();
-        var title = Component.text(TITLE_RAW, NamedTextColor.RED).decorate(TextDecoration.BOLD);
+        String titleRaw = plugin.getConfig().getString("server-selector.title", "Game Selector");
+        var title = Component.text(titleRaw, NamedTextColor.RED).decorate(TextDecoration.BOLD);
         Inventory inv = Bukkit.createInventory(holder, SIZE, title);
 
 
@@ -96,26 +95,26 @@ public class ServerSelectorGUI implements Listener {
 
         inv.setItem(38, skull(
                 "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZDNkMjVkNTVjYWVkZmQ3MGVlN2YzYTgwNmFmMDAyNWYxNTNkNGJmMzRmNDFlNmVmZDQ0ZWM4ZmU3NDE5OGYzNSJ9fX0=",
-                Component.text("✈ Telegram", NamedTextColor.BLUE).decorate(TextDecoration.BOLD),
-                List.of(Component.text("https://t.me/flamenetwork", NamedTextColor.BLUE)),
+                Component.text(plugin.getConfig().getString("server-selector.social.telegram.name", "✈ Telegram"), NamedTextColor.BLUE).decorate(TextDecoration.BOLD),
+                List.of(Component.text(plugin.getConfig().getString("server-selector.social.telegram.url", "https://github.com/amirwopi"), NamedTextColor.BLUE)),
                 Material.PLAYER_HEAD));
 
         inv.setItem(41, skull(
                 "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvOWQ1MmYwYTZmNDNlZjdhMTU2NGViZmEyMGFkOGM4ZTdmNjk0YTFmMjZjMmJhZTMwMzc2ZGJiM2NhMzE2MzZlYiJ9fX0=",
-                Component.text("🎧 TeamSpeak", NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
-                List.of(Component.text("ts.flamenetwork.ir", NamedTextColor.AQUA)),
+                Component.text(plugin.getConfig().getString("server-selector.social.teamspeak.name", "🎧 TeamSpeak"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
+                List.of(Component.text(plugin.getConfig().getString("server-selector.social.teamspeak.url", "github.com/amirwopi"), NamedTextColor.AQUA)),
                 Material.PLAYER_HEAD));
 
         inv.setItem(40, skull(
                 "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvOTJjYTI3Y2FiODc3MjI4OTZkYzY2OGM3YjliNzZlNmZjM2UyZGNlNzcwNTgzYWRmYmUxNjJhZGM5NGU5ZDgyZCJ9fX0=",
-                Component.text("💬 Discord", NamedTextColor.BLUE).decorate(TextDecoration.BOLD),
-                List.of(Component.text("https://discord.gg/fRk56VzCRM", NamedTextColor.BLUE)),
+                Component.text(plugin.getConfig().getString("server-selector.social.discord.name", "💬 Discord"), NamedTextColor.BLUE).decorate(TextDecoration.BOLD),
+                List.of(Component.text(plugin.getConfig().getString("server-selector.social.discord.url", "https://github.com/amirwopi"), NamedTextColor.BLUE)),
                 Material.PLAYER_HEAD));
 
         inv.setItem(39, skull(
                 "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNDM4Y2YzZjhlNTRhZmMzYjNmOTFkMjBhNDlmMzI0ZGNhMTQ4NjAwN2ZlNTQ1Mzk5MDU1NTI0YzE3OTQxZjRkYyJ9fX0=",
-                Component.text("🌐 Website", NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
-                List.of(Component.text("https://www.flamenetwork.ir", NamedTextColor.YELLOW)),
+                Component.text(plugin.getConfig().getString("server-selector.social.website.name", "🌐 Website"), NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
+                List.of(Component.text(plugin.getConfig().getString("server-selector.social.website.url", "https://github.com/amirwopi"), NamedTextColor.YELLOW)),
                 Material.PLAYER_HEAD));
 
 
@@ -155,22 +154,30 @@ public class ServerSelectorGUI implements Listener {
             }
             case 38 -> {
                 sound(player, Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1.5f);
-                player.sendMessage(clickableLink("Telegram » ", "https://t.me/flamenetwork", NamedTextColor.BLUE));
+                String url = plugin.getConfig().getString("server-selector.social.telegram.url", "https://github.com/amirwopi");
+                String label = plugin.getConfig().getString("server-selector.social.telegram.chat-label", "Telegram » ");
+                player.sendMessage(clickableLink(label, url, NamedTextColor.BLUE));
                 player.closeInventory();
             }
             case 41 -> {
                 sound(player, Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1.5f);
-                player.sendMessage(clickableLink("TeamSpeak » ", "https://ts.flamenetwork.ir", NamedTextColor.AQUA));
+                String url = plugin.getConfig().getString("server-selector.social.teamspeak.url", "github.com/amirwopi");
+                String label = plugin.getConfig().getString("server-selector.social.teamspeak.chat-label", "TeamSpeak » ");
+                player.sendMessage(clickableLink(label, url, NamedTextColor.AQUA));
                 player.closeInventory();
             }
             case 40 -> {
                 sound(player, Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1.5f);
-                player.sendMessage(clickableLink("Discord » ", "https://discord.gg/fRk56VzCRM", NamedTextColor.BLUE));
+                String url = plugin.getConfig().getString("server-selector.social.discord.url", "https://github.com/amirwopi");
+                String label = plugin.getConfig().getString("server-selector.social.discord.chat-label", "Discord » ");
+                player.sendMessage(clickableLink(label, url, NamedTextColor.BLUE));
                 player.closeInventory();
             }
             case 39 -> {
                 sound(player, Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1.5f);
-                player.sendMessage(clickableLink("Website » ", "https://www.flamenetwork.ir", NamedTextColor.YELLOW));
+                String url = plugin.getConfig().getString("server-selector.social.website.url", "https://github.com/amirwopi");
+                String label = plugin.getConfig().getString("server-selector.social.website.chat-label", "Website » ");
+                player.sendMessage(clickableLink(label, url, NamedTextColor.YELLOW));
                 player.closeInventory();
             }
             default -> {
@@ -199,7 +206,8 @@ public class ServerSelectorGUI implements Listener {
                 player.sendPluginMessage(plugin, "BungeeCord", payload);
                 player.sendPluginMessage(plugin, "bungeecord:main", payload);
             } catch (Exception e) {
-                player.sendMessage(Component.text("Failed to connect to server: " + serverName, NamedTextColor.RED));
+                String raw = plugin.getConfig().getString("messages.server-connect-failed", "Failed to connect to server: {server}");
+                player.sendMessage(Component.text(raw.replace("{server}", serverName), NamedTextColor.RED));
             }
         });
     }

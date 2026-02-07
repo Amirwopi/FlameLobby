@@ -1,6 +1,7 @@
 package ir.mrwopi.flameLobby.listeners;
 
 import ir.mrwopi.flameLobby.FlameLobby;
+import ir.mrwopi.flameLobby.LobbyItems;
 import ir.mrwopi.flameLobby.managers.PvPManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -31,7 +32,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class PvPListener implements Listener {
     private static final String SPAWN_WORLD = "spawn";
-    private static final int SWORD_SLOT = 4;
     private static final int COMBAT_SECONDS = 10;
 
     private final FlameLobby plugin;
@@ -47,6 +47,12 @@ public class PvPListener implements Listener {
         this.plugin = plugin;
         this.pvpManager = pvpManager;
         this.pvpArmorKey = new NamespacedKey(plugin, "pvp_armor");
+    }
+
+    private int getSwordSlot() {
+        int slot = plugin.getConfig().getInt("lobby-items.slots.pvp-sword", 4);
+        if (slot < 0 || slot > 8) slot = 4;
+        return slot;
     }
 
     private void ensureBelowNameHealthObjective() {
@@ -89,22 +95,70 @@ public class PvPListener implements Listener {
         return plain.toLowerCase().contains("pvp");
     }
 
+    private void equipLobbyElytra(Player player) {
+        if (!isInSpawn(player)) {
+            return;
+        }
+        if (!plugin.getConfig().getBoolean("lobby-items.enabled", true)) {
+            return;
+        }
+        player.getInventory().setChestplate(LobbyItems.elytraItem(plugin));
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onItemHeld(PlayerItemHeldEvent event) {
         Player player = event.getPlayer();
         if (!isInSpawn(player)) return;
 
+        int swordSlot = getSwordSlot();
         int newSlot = event.getNewSlot();
         ItemStack inHand = player.getInventory().getItem(newSlot);
 
 
         cancelCountdown(player.getUniqueId());
 
+        if (pvpManager.isEnabled(player) && !pvpManager.isInCombat(player)) {
+            boolean holdingSwordNow = newSlot == swordSlot && isPvPSword(inHand);
+            if (!holdingSwordNow) {
+                BukkitTask disableTask = Bukkit.getScheduler().runTaskTimer(plugin, new Runnable() {
+                    int sec = 5;
+                    @Override
+                    public void run() {
+                        if (!player.isOnline() || !isInSpawn(player)) {
+                            cancelCountdown(player.getUniqueId());
+                            return;
+                        }
+                        int ss = getSwordSlot();
+                        ItemStack item = player.getInventory().getItem(ss);
+                        boolean holding = isPvPSword(item) && player.getInventory().getHeldItemSlot() == ss;
+                        if (holding) {
+                            cancelCountdown(player.getUniqueId());
+                            return;
+                        }
+                        if (sec <= 0) {
+                            if (pvpManager.isEnabled(player)) {
+                                pvpManager.setEnabled(player, false);
+                                player.sendMessage(Component.text("PvP disabled (you switched items)", NamedTextColor.GRAY));
+                                playDisableFx(player);
+                                restoreArmor(player);
+                                equipLobbyElytra(player);
+                            }
+                            cancelCountdown(player.getUniqueId());
+                            return;
+                        }
+                        player.sendActionBar(Component.text("PvP disabling in " + sec + "s", NamedTextColor.YELLOW));
+                        sec--;
+                    }
+                }, 0L, 20L);
+                countdowns.put(player.getUniqueId(), disableTask);
+            }
+        }
+
         if (pvpManager.isInCombat(player)) {
             int left = pvpManager.getCombatSecondsLeft(player);
             if (player.getSaturation() > 0f) player.setSaturation(0f);
-            ItemStack item = player.getInventory().getItem(SWORD_SLOT);
-            boolean holding = isPvPSword(item) && player.getInventory().getHeldItemSlot() == SWORD_SLOT;
+            ItemStack item = player.getInventory().getItem(swordSlot);
+            boolean holding = isPvPSword(item) && player.getInventory().getHeldItemSlot() == swordSlot;
             if (holding) {
                 player.sendActionBar(Component.text("PvP active", NamedTextColor.RED));
             } else {
@@ -112,7 +166,7 @@ public class PvPListener implements Listener {
             }
         }
 
-        if (newSlot == SWORD_SLOT && isPvPSword(inHand)) {
+        if (newSlot == swordSlot && isPvPSword(inHand)) {
 
             if (pvpManager.isEnabled(player)) {
                 pvpManager.setHoldingSlot(player, newSlot);
@@ -129,7 +183,8 @@ public class PvPListener implements Listener {
                         pvpManager.setEnabled(player, false);
                         return;
                     }
-                    if (!pvpManager.isStillHolding(player, SWORD_SLOT) || !isPvPSword(player.getInventory().getItem(SWORD_SLOT))) {
+                    int ss = getSwordSlot();
+                    if (!pvpManager.isStillHolding(player, ss) || !isPvPSword(player.getInventory().getItem(ss))) {
                         cancelCountdown(player.getUniqueId());
                         if (!pvpManager.isInCombat(player)) {
                             pvpManager.setEnabled(player, false);
@@ -137,12 +192,13 @@ public class PvPListener implements Listener {
 
                             playDisableFx(player);
                             restoreArmor(player);
+                            equipLobbyElytra(player);
                         } else {
                             int left = pvpManager.getCombatSecondsLeft(player);
 
             if (player.getSaturation() > 0f) player.setSaturation(0f);
-            ItemStack item = player.getInventory().getItem(SWORD_SLOT);
-            boolean holding = isPvPSword(item) && player.getInventory().getHeldItemSlot() == SWORD_SLOT;
+            ItemStack item = player.getInventory().getItem(ss);
+            boolean holding = isPvPSword(item) && player.getInventory().getHeldItemSlot() == ss;
             if (holding) {
                 player.sendActionBar(Component.text("PvP active", NamedTextColor.RED));
             } else {
@@ -259,11 +315,9 @@ public class PvPListener implements Listener {
         Player player = event.getPlayer();
 
         if (isInSpawn(player)) {
-            String spawnWorldName = plugin.getSpawnWorldName();
-            if (spawnWorldName == null || spawnWorldName.isBlank()) spawnWorldName = SPAWN_WORLD;
-            World spawnWorld = Bukkit.getWorld(spawnWorldName);
-            if (spawnWorld != null) {
-                event.setRespawnLocation(spawnWorld.getSpawnLocation());
+            Location loc = plugin.getConfiguredSpawnLocation();
+            if (loc != null) {
+                event.setRespawnLocation(loc);
             }
         }
     }
@@ -301,8 +355,9 @@ public class PvPListener implements Listener {
                 player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
                 stopCombatBar(player.getUniqueId());
 
-                ItemStack item = player.getInventory().getItem(SWORD_SLOT);
-                boolean holdingPvpSword = isPvPSword(item) && player.getInventory().getHeldItemSlot() == SWORD_SLOT;
+                int swordSlot = getSwordSlot();
+                ItemStack item = player.getInventory().getItem(swordSlot);
+                boolean holdingPvpSword = isPvPSword(item) && player.getInventory().getHeldItemSlot() == swordSlot;
                 if (!holdingPvpSword) {
                     if (pvpManager.isEnabled(player)) {
                         pvpManager.setEnabled(player, false);
@@ -310,6 +365,7 @@ public class PvPListener implements Listener {
 
                         playDisableFx(player);
                         restoreArmor(player);
+                        equipLobbyElytra(player);
                     }
                 }
                 return;
@@ -360,11 +416,15 @@ public class PvPListener implements Listener {
         }
 
 
+        ItemStack helmet = tag(make(Material.DIAMOND_HELMET));
         ItemStack chest = tag(make(Material.DIAMOND_CHESTPLATE));
         ItemStack legs = tag(make(Material.DIAMOND_LEGGINGS));
+        ItemStack boots = tag(make(Material.DIAMOND_BOOTS));
 
+        player.getInventory().setHelmet(helmet);
         player.getInventory().setChestplate(chest);
         player.getInventory().setLeggings(legs);
+        player.getInventory().setBoots(boots);
     }
 
     private void restoreArmor(Player player) {

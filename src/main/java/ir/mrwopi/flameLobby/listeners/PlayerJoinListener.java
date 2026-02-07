@@ -1,11 +1,13 @@
 package ir.mrwopi.flameLobby.listeners;
 
 import ir.mrwopi.flameLobby.FlameLobby;
+import ir.mrwopi.flameLobby.LobbyItems;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.*;
 import org.bukkit.enchantments.Enchantment;
+
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -35,31 +37,40 @@ public record PlayerJoinListener(FlameLobby plugin) implements Listener {
 
         Bukkit.getScheduler().runTask(plugin, () -> {
             player.getInventory().clear();
+            player.getInventory().setArmorContents(new ItemStack[4]);
             player.setGameMode(GameMode.ADVENTURE);
 
-            World spawnWorld = Bukkit.getWorld("spawn");
-            if (spawnWorld != null) {
-                Location spawnLoc = new Location(spawnWorld, -56.5, 96.0, 0.5, -90.90032196044922f, 0.9000003933906555f);
+            Location spawnLoc = plugin.getConfiguredSpawnLocation();
+            final String spawnWorldName;
+            if (spawnLoc != null && spawnLoc.getWorld() != null) {
+                spawnWorldName = spawnLoc.getWorld().getName();
                 player.teleport(spawnLoc);
             } else {
-                plugin.getLogger().warning("World 'spawn' not found for player: " + player.getName());
-                return;
+                String tmp = plugin.getSpawnWorldName();
+                if (tmp == null || tmp.isBlank()) tmp = "world";
+                spawnWorldName = tmp;
+                plugin.getLogger().warning("World '" + spawnWorldName + "' not found for player: " + player.getName());
             }
+
+            stopAjParkour(player);
 
             giveCompass(player);
             givePvPSword(player);
+            giveLobbyExtras(player);
+            equipLobbyElytra(player);
 
             if (plugin.isNoteBlockAPIEnabled()) {
                 giveNoteBlock(player);
                 enqueueTask(uuid, Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    if (player.isOnline() && "spawn".equals(player.getWorld().getName())) {
+                    if (player.isOnline() && spawnWorldName.equals(player.getWorld().getName())) {
                         plugin.getMusicManager().playRandomSong(player);
                     }
                 }, 20L));
             }
 
-
-            player.getInventory().setHeldItemSlot(0);
+            int selectorSlot = plugin.getConfig().getInt("lobby-items.slots.server-selector", 0);
+            if (selectorSlot < 0 || selectorSlot > 8) selectorSlot = 0;
+            player.getInventory().setHeldItemSlot(selectorSlot);
 
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 if (player.isOnline()) {
@@ -67,6 +78,45 @@ public record PlayerJoinListener(FlameLobby plugin) implements Listener {
                 }
             }, 5L);
         });
+    }
+
+    private void stopAjParkour(Player player) {
+        if (!plugin.getConfig().getBoolean("ajparkour.enabled", true)) {
+            return;
+        }
+        if (plugin.getServer().getPluginManager().getPlugin("ajParkour") == null) {
+            return;
+        }
+        String cmd = plugin.getConfig().getString("ajparkour.stop-command", "");
+        if (cmd == null || cmd.isBlank()) {
+            return;
+        }
+        if (cmd.startsWith("/")) cmd = cmd.substring(1);
+        String finalCmd = cmd.replace("{player}", player.getName());
+        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), finalCmd);
+    }
+
+    private void giveLobbyExtras(Player player) {
+        if (!plugin.getConfig().getBoolean("lobby-items.enabled", true)) {
+            return;
+        }
+
+        int parkourSlot = plugin.getConfig().getInt("lobby-items.slots.parkour-start", 1);
+        int fireworksSlot = plugin.getConfig().getInt("lobby-items.slots.fireworks", 8);
+
+        if (parkourSlot >= 0 && parkourSlot <= 8) {
+            player.getInventory().setItem(parkourSlot, LobbyItems.parkourStartItem(plugin));
+        }
+        if (fireworksSlot >= 0 && fireworksSlot <= 8) {
+            player.getInventory().setItem(fireworksSlot, LobbyItems.fireworksItem(plugin));
+        }
+    }
+
+    private void equipLobbyElytra(Player player) {
+        if (!plugin.getConfig().getBoolean("lobby-items.enabled", true)) {
+            return;
+        }
+        player.getInventory().setChestplate(LobbyItems.elytraItem(plugin));
     }
 
     private void playSpawnEffects(Player player) {
@@ -223,7 +273,10 @@ public record PlayerJoinListener(FlameLobby plugin) implements Listener {
     }
 
     private void giveCompass(Player player) {
-        if (player.getInventory().getItem(0) != null && Objects.requireNonNull(player.getInventory().getItem(0)).getType() != Material.AIR) {
+        int slot = plugin.getConfig().getInt("lobby-items.slots.server-selector", 0);
+        if (slot < 0 || slot > 8) slot = 0;
+
+        if (player.getInventory().getItem(slot) != null && Objects.requireNonNull(player.getInventory().getItem(slot)).getType() != Material.AIR) {
             return;
         }
 
@@ -237,10 +290,13 @@ public record PlayerJoinListener(FlameLobby plugin) implements Listener {
             meta.addEnchant(Enchantment.MENDING, 1, true);
             meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
         });
-        player.getInventory().setItem(0, compass);
+        player.getInventory().setItem(slot, compass);
     }
 
     private void givePvPSword(Player player) {
+        int slot = plugin.getConfig().getInt("lobby-items.slots.pvp-sword", 4);
+        if (slot < 0 || slot > 8) slot = 4;
+
         ItemStack sword = new ItemStack(Material.DIAMOND_SWORD);
         sword.editMeta(meta -> {
             meta.displayName(Component.text("PvP Sword ", NamedTextColor.RED)
@@ -260,10 +316,13 @@ public record PlayerJoinListener(FlameLobby plugin) implements Listener {
                 dmg.setDamage(0);
             }
         });
-        player.getInventory().setItem(4, sword);
+        player.getInventory().setItem(slot, sword);
     }
 
     private void giveNoteBlock(Player player) {
+        int slot = plugin.getConfig().getInt("lobby-items.slots.music-player", 8);
+        if (slot < 0 || slot > 8) slot = 8;
+
         ItemStack noteBlock = new ItemStack(Material.NOTE_BLOCK);
         noteBlock.editMeta(meta -> {
             meta.displayName(Component.text("Music Player ", NamedTextColor.GOLD)
@@ -274,7 +333,7 @@ public record PlayerJoinListener(FlameLobby plugin) implements Listener {
             meta.addEnchant(Enchantment.MENDING, 1, true);
             meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
         });
-        player.getInventory().setItem(8, noteBlock);
+        player.getInventory().setItem(slot, noteBlock);
     }
 
     private void enqueueTask(UUID uuid, BukkitTask task) {

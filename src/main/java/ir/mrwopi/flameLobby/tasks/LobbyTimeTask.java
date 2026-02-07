@@ -19,7 +19,7 @@ public class LobbyTimeTask extends BukkitRunnable {
     @Override
     public void run() {
         try {
-            World world = Bukkit.getWorld("spawn");
+            World world = Bukkit.getWorld("world");
             if (world == null) return;
 
             Boolean cycle = world.getGameRuleValue(GameRule.DO_DAYLIGHT_CYCLE);

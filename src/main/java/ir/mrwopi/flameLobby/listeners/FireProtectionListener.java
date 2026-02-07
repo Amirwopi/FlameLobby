@@ -13,7 +13,7 @@ public class FireProtectionListener implements Listener {
             return;
         }
 
-        if (!player.getWorld().getName().equals("spawn")) {
+        if (!player.getWorld().getName().equals("world")) {
             return;
         }
 
@@ -32,7 +32,7 @@ public class FireProtectionListener implements Listener {
             return;
         }
 
-        if (player.getWorld().getName().equals("spawn")) {
+        if (player.getWorld().getName().equals("world")) {
             event.setCancelled(true);
             player.setFireTicks(0);
         }

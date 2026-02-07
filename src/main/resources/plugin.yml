@@ -1,11 +1,11 @@
 name: FlameLobby
 version: "${project.version}"
 main: ir.mrwopi.flameLobby.FlameLobby
-api-version: '1.20'
+api-version: '1.19'
 author: Amirwopi
 website: https://github.com/amirwopi
 description: Advanced Lobby Plugin with Music and Server Selection
-softdepend: [NoteBlockAPI]
+softdepend: [NoteBlockAPI, ajParkour]
 
 commands:
   fly:

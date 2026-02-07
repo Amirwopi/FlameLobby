@@ -1,5 +1,6 @@
 package ir.mrwopi.flameLobby.listeners;
 
+import ir.mrwopi.flameLobby.FlameLobby;
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -17,12 +18,21 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 
 public class BlockListener implements Listener {
 
-    private static final String SPAWN_WORLD = "spawn";
     private static final String ADMIN_PERMISSION = "flamelobby.admin";
+
+    private final FlameLobby plugin;
+
+    public BlockListener(FlameLobby plugin) {
+        this.plugin = plugin;
+    }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
         var player = event.getPlayer();
+
+        if (!plugin.getConfig().getBoolean("protections.spawn.prevent-block-break", true)) {
+            return;
+        }
 
         if (isInSpawn(player) && !player.hasPermission(ADMIN_PERMISSION)) {
             event.setCancelled(true);
@@ -32,6 +42,10 @@ public class BlockListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBlockPlace(BlockPlaceEvent event) {
         var player = event.getPlayer();
+
+        if (!plugin.getConfig().getBoolean("protections.spawn.prevent-block-place", true)) {
+            return;
+        }
 
         if (isInSpawn(player) && !player.hasPermission(ADMIN_PERMISSION)) {
             event.setCancelled(true);
@@ -95,6 +109,10 @@ public class BlockListener implements Listener {
     public void onBucketEmpty(PlayerBucketEmptyEvent event) {
         var player = event.getPlayer();
 
+        if (!plugin.getConfig().getBoolean("protections.spawn.prevent-bucket-empty", true)) {
+            return;
+        }
+
         if (isInSpawn(player) && !player.hasPermission(ADMIN_PERMISSION)) {
             event.setCancelled(true);
         }
@@ -103,6 +121,10 @@ public class BlockListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBucketFill(PlayerBucketFillEvent event) {
         var player = event.getPlayer();
+
+        if (!plugin.getConfig().getBoolean("protections.spawn.prevent-bucket-fill", true)) {
+            return;
+        }
 
         if (isInSpawn(player) && !player.hasPermission(ADMIN_PERMISSION)) {
             event.setCancelled(true);
@@ -129,11 +151,15 @@ public class BlockListener implements Listener {
     }
 
     private boolean isInSpawn(Player player) {
-        return SPAWN_WORLD.equals(player.getWorld().getName());
+        String spawnWorldName = plugin.getConfiguredSpawnWorldName();
+        if (spawnWorldName == null || spawnWorldName.isBlank()) spawnWorldName = "world";
+        return spawnWorldName.equals(player.getWorld().getName());
     }
 
     private boolean isInSpawn(String worldName) {
-        return SPAWN_WORLD.equals(worldName);
+        String spawnWorldName = plugin.getConfiguredSpawnWorldName();
+        if (spawnWorldName == null || spawnWorldName.isBlank()) spawnWorldName = "world";
+        return spawnWorldName.equals(worldName);
     }
 
     private boolean isInteractableBlock(Material material) {

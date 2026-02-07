@@ -1,6 +1,117 @@
-# Default configuration for FlameLobby
-# The world name considered as protected spawn area
-spawn-world: "spawn"
+spawn-world: "world"
+
+spawn-location:
+  world: "world"
+  x: 0.5
+  y: 100.0
+  z: 0.5
+  yaw: 0.0
+  pitch: 0.0
+
+branding:
+  server-name: "amirwopi_fox"
+  author: "amirwopi"
+  github: "https://github.com/amirwopi"
+  console-banner:
+    - "&6========================================"
+    - "&eFlameLobby &7| &fby &bamirwopi"
+    - "&7GitHub: &fhttps://github.com/amirwopi"
+    - "&6========================================"
 
 messages:
-  prefix: "§e[FlameLobby]§r "
+  prefix: "§e[amirwopi_fox]§r "
+
+  errors:
+    server-selector-unavailable: "§cServer selector is not available!"
+    music-unavailable: "§cMusic system is not available!"
+
+  parkour:
+    disabled: "§cParkour is disabled."
+    ajparkour-missing: "§cajParkour is not installed."
+
+  lobby:
+    fallen-teleport: "§7Teleported you to Lobby, stay safe :)"
+
+  server-connect-failed: "§cFailed to connect to server: {server}"
+
+  music:
+    no-tracks: "§cNo music tracks available!"
+    permanently-disabled: "§cMusic has been permanently disabled!"
+    enabled: "§aMusic has been enabled!"
+
+music-gui:
+  title: "Music Player"
+  page-format: "- Page {page}/{pages}"
+
+server-selector:
+  title: "Game Selector"
+  social:
+    telegram:
+      name: "✈ Telegram"
+      url: "https://github.com/amirwopi"
+      chat-label: "Telegram » "
+    discord:
+      name: "💬 Discord"
+      url: "https://github.com/amirwopi"
+      chat-label: "Discord » "
+    teamspeak:
+      name: "🎧 TeamSpeak"
+      url: "github.com/amirwopi"
+      chat-label: "TeamSpeak » "
+    website:
+      name: "🌐 Website"
+      url: "https://github.com/amirwopi"
+      chat-label: "Website » "
+
+lobby-items:
+  enabled: true
+  slots:
+    server-selector: 0
+    parkour-start: 1
+    pvp-sword: 4
+    music-player: 6
+    elytra: 7
+    fireworks: 8
+  items:
+    parkour-start:
+      material: LIME_DYE
+      name: "§aParkour §7(Click)"
+      lore:
+        - "§7Click to start parkour"
+    elytra:
+      name: "§bElytra"
+      lore:
+        - "§7For lobby flying"
+    fireworks:
+      amount: 1
+      name: "§eFireworks"
+      lore:
+        - "§7Boost your elytra"
+
+ajparkour:
+  enabled: true
+  start-command: "/ajp start"
+  stop-command: "/ajp leave"
+
+jump-pad:
+  enabled: true
+  trigger: LIGHT_WEIGHTED_PRESSURE_PLATE
+  horizontal: 8.5
+  vertical: 1.6
+
+auto-announcer:
+  enabled: true
+  interval-seconds: 60
+  messages:
+    - "§eWelcome to §6amirwopi_fox§e!"
+    - "§bUse the compass to open the game selector."
+
+protections:
+  spawn:
+    prevent-block-break: true
+    prevent-block-place: true
+    prevent-bucket-empty: true
+    prevent-bucket-fill: true
+    prevent-item-drop: true
+    prevent-swap-hand: true
+    prevent-inventory-move: true
